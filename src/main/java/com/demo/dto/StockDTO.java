@@ -4,26 +4,38 @@ import com.demo.model.Stock;
 
 public class StockDTO {
 
+    private Long id;
     private String symbol;
     private String companyName;
     private Double currentPrice;
     private Integer quantity;
     private Double totalValue;
+    private Double changePercent;
 
     // Default constructor
     public StockDTO() {
     }
 
     // Constructor to initialize all fields
-    public StockDTO(String symbol, String companyName, Double currentPrice, Integer quantity, Double totalValue) {
+    public StockDTO(Long id, String symbol, String companyName, Double currentPrice, Integer quantity, Double totalValue, Double changePercent) {
+        this.id = id;
         this.symbol = symbol;
         this.companyName = companyName;
         this.currentPrice = currentPrice;
         this.quantity = quantity;
         this.totalValue = totalValue;
+        this.changePercent = changePercent;
     }
 
     // Getters and Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public String getSymbol() {
         return symbol;
     }
@@ -64,10 +76,18 @@ public class StockDTO {
         this.totalValue = totalValue;
     }
 
+    public Double getChangePercent() {
+        return changePercent;
+    }
+
+    public void setChangePercent(Double changePercent) {
+        this.changePercent = changePercent;
+    }
+
     // Convert a Stock entity to a StockDTO
     public static StockDTO fromEntity(Stock stock) {
         Double totalValue = stock.getCurrentPrice() * stock.getQuantity();
-        return new StockDTO(stock.getSymbol(), stock.getCompanyName(), stock.getCurrentPrice(), stock.getQuantity(), totalValue);
+        return new StockDTO(stock.getId(), stock.getSymbol(), stock.getCompanyName(), stock.getCurrentPrice(), stock.getQuantity(), totalValue, 0.0);
     }
 
     // Convert a StockDTO to a Stock entity (optional, for updates)
@@ -83,11 +103,13 @@ public class StockDTO {
     @Override
     public String toString() {
         return "StockDTO{" +
-                "symbol='" + symbol + '\'' +
+                "id=" + id +
+                ", symbol='" + symbol + '\'' +
                 ", companyName='" + companyName + '\'' +
                 ", currentPrice=" + currentPrice +
                 ", quantity=" + quantity +
                 ", totalValue=" + totalValue +
+                ", changePercent=" + changePercent +
                 '}';
     }
 }

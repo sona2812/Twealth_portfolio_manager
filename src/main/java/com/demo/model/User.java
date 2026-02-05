@@ -13,6 +13,7 @@ public class User {
     private String Username;
     private String Password;
     private String email;
+    private String apiKey;
     public User(){}
 
     public User(int id, String username, String password, String email) {
@@ -54,6 +55,14 @@ public class User {
         this.email = email;
     }
 
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
     @Override
     public String toString() {
         return "User{" +
@@ -61,6 +70,7 @@ public class User {
                 ", Username='" + Username + '\'' +
                 ", Password='" + Password + '\'' +
                 ", email='" + email + '\'' +
+                ", apiKey='" + apiKey + '\'' +
                 '}';
     }
 }
