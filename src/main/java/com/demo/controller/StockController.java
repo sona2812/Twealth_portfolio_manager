@@ -17,11 +17,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/stocks")
+@CrossOrigin(origins = "*") // Allow all origins for local dev
 public class StockController {
 
     private final StockService stockService;
@@ -31,7 +34,6 @@ public class StockController {
         this.stockService = stockService;
     }
 
-    // Create or update a stock
     @PostMapping
     public ResponseEntity<StockDTO> createOrUpdateStock(@RequestBody StockDTO stockDTO) {
         try {
@@ -49,7 +51,6 @@ public class StockController {
         }
     }
 
-    // Get all stocks with live prices
     @GetMapping
     public ResponseEntity<List<StockDTO>> getAllStocks(@RequestParam(required = false) String apiKey) {
         try {
@@ -62,31 +63,30 @@ public class StockController {
         }
     }
 
-    // Get stock by ID
+    // NEW: Endpoint for Chart.js in main.js
+    @GetMapping("/history/{symbol}/{range}")
+    public ResponseEntity<Map<String, Double>> getStockHistory(@PathVariable String symbol,
+            @PathVariable String range) {
+        // Mocking historical data until a time-series API is integrated
+        Map<String, Double> history = new HashMap<>();
+        double basePrice = 150.0;
+        for (int i = 7; i >= 0; i--) {
+            history.put("2024-05-0" + (7 - i), basePrice + (Math.random() * 10));
+        }
+        return new ResponseEntity<>(history, HttpStatus.OK);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<StockDTO> getStockById(@PathVariable Long id) {
-        Optional<Stock> stock = stockService.getStockById(id);
-        return stock.map(value -> new ResponseEntity<>(StockDTO.fromEntity(value), HttpStatus.OK))
+        return stockService.getStockById(id)
+                .map(value -> new ResponseEntity<>(StockDTO.fromEntity(value), HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    // Get stock by symbol
-    @GetMapping("/symbol/{symbol}")
-    public ResponseEntity<StockDTO> getStockBySymbol(@PathVariable String symbol) {
-        Optional<Stock> stock = stockService.getStockBySymbol(symbol);
-        return stock.map(value -> new ResponseEntity<>(StockDTO.fromEntity(value), HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
-    }
-
-    // Delete stock by ID
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteStockById(@PathVariable Long id) {
-        if (stockService.getStockById(id).isPresent()) {
-            stockService.deleteStockById(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        stockService.deleteStockById(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     // Delete stock by symbol
@@ -129,7 +129,7 @@ public class StockController {
     // Get total portfolio value
     @GetMapping("/total-value")
     public ResponseEntity<Double> getTotalPortfolioValue() {
-        Double totalValue = stockService.getTotalPortfolioValue();
-        return new ResponseEntity<>(totalValue, HttpStatus.OK);
+        // Logic should eventually take a User ID
+        return new ResponseEntity<>(stockService.getTotalPortfolioValue(), HttpStatus.OK);
     }
 }

@@ -9,25 +9,26 @@ import jakarta.persistence.Id;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id; // Changed from int to Long to match Repository and foreign keys
     private String Username;
     private String Password;
     private String email;
     private String apiKey;
+
     public User(){}
 
-    public User(int id, String username, String password, String email) {
+    public User(Long id, String username, String password, String email) {
         this.id = id;
         Username = username;
         Password = password;
         this.email = email;
     }
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -68,9 +69,7 @@ public class User {
         return "User{" +
                 "id=" + id +
                 ", Username='" + Username + '\'' +
-                ", Password='" + Password + '\'' +
                 ", email='" + email + '\'' +
-                ", apiKey='" + apiKey + '\'' +
                 '}';
     }
 }

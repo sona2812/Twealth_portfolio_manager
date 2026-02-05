@@ -42,16 +42,15 @@ public class UserDTO {
 
     // Convert a User entity to a UserDTO
     public static UserDTO fromEntity(User user) {
-        return new UserDTO((long) user.getId(), user.getUsername(), user.getEmail());
+        return new UserDTO(user.getId(), user.getUsername(), user.getEmail());
     }
 
     // Convert a UserDTO to a User entity (optional, if needed for updates)
     public User toEntity() {
         User user = new User();
-        user.setId(Math.toIntExact(this.id));
+        user.setId(this.id);
         user.setUsername(this.username);
         user.setEmail(this.email);
         return user;
     }
 }
-
