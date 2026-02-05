@@ -495,7 +495,7 @@ async function loadMarketStocks(render = true) {
             if (tbody) {
                 tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--danger-color);">
                     Error loading stocks: ${e.message}<br>
-                    ${stockApiKey ? 'Please check your API key override in Settings.' : 'Please configure your API key in application.properties or Settings to fetch live prices.'}
+                    ${stockApiKey ? 'Please wait for a few minutes and try again.' : 'please wait'}
                 </td></tr>`;
             }
         }

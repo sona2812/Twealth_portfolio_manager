@@ -12,6 +12,7 @@ public class StockApiService {
 
     private final RestTemplate restTemplate;
     private final String defaultApiKey;
+    private final double usdInrRate;
     
     // Popular stock symbols to fetch (limited to avoid rate limiting)
     private static final List<String> POPULAR_STOCKS = Arrays.asList(
@@ -19,9 +20,13 @@ public class StockApiService {
         "WMT", "PG", "MA", "UNH", "HD"
     );
 
-    public StockApiService(@Value("${finnhub.api.key:}") String defaultApiKey) {
+    public StockApiService(
+            @Value("${finnhub.api.key:}") String defaultApiKey,
+            @Value("${usd.inr.rate:83.5}") double usdInrRate
+    ) {
         this.restTemplate = new RestTemplate();
         this.defaultApiKey = defaultApiKey;
+        this.usdInrRate = usdInrRate;
     }
     
     /**
@@ -76,6 +81,9 @@ public class StockApiService {
             if (price <= 0) {
                 return null;
             }
+
+            // Convert USD price to INR using configured rate
+            Double priceInInr = price * usdInrRate;
             
             Double changePercent = 0.0;
             if (changePercentObj != null) {
@@ -109,7 +117,8 @@ public class StockApiService {
             // Generate a temporary ID based on symbol hash for API-only stocks
             Long tempId = (long) Math.abs(symbol.hashCode());
             
-            return new StockDTO(tempId, symbol, fullCompanyName, price, 0, 0.0, changePercent);
+            // Note: we now return price in INR so frontend sees values already converted
+            return new StockDTO(tempId, symbol, fullCompanyName, priceInInr, 0, 0.0, changePercent);
             
         } catch (Exception e) {
             System.err.println("Error fetching stock quote for " + symbol + ": " + e.getMessage());
