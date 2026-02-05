@@ -25,94 +25,51 @@ public class PortfolioServiceImpl implements PortfolioService {
         this.stockRepository = stockRepository;
     }
 
-    /**
-     * Saves a portfolio or updates it if it already exists.
-     *
-     * @param portfolioDTO The portfolio DTO to be saved.
-     * @return The saved portfolio DTO.
-     */
     @Override
     @Transactional
     public PortfolioDTO savePortfolio(PortfolioDTO portfolioDTO) {
-        // Fetch stock IDs
-        List<Long> stockIds = portfolioDTO.getStockIds();
+        List<Stock> stocks = stockRepository.findAllById(portfolioDTO.getStockIds());
 
-        // Fetch stocks by their IDs (assuming they exist)
-        List<Stock> stocks = stockRepository.findAllById(stockIds);
-
-        // Create or update Portfolio entity
         Portfolio portfolio = new Portfolio();
         portfolio.setId(portfolioDTO.getId());
         portfolio.setName(portfolioDTO.getName());
         portfolio.setDescription(portfolioDTO.getDescription());
-        portfolio.setStocks(stocks);  // Set the stocks related to this portfolio
+        portfolio.setStocks(stocks);
 
-        // Save portfolio to the repository
         Portfolio savedPortfolio = portfolioRepository.save(portfolio);
 
-        // Calculate total value of the portfolio (sum of stock prices)
+        // Calculate value based on Current Price of the stocks
         Double totalValue = stocks.stream()
-                .mapToDouble(stock -> stock.getCurrentPrice() * stock.getQuantity()) // Assuming stock has price and quantity
+                .mapToDouble(stock -> stock.getCurrentPrice() * (stock.getQuantity() != null ? stock.getQuantity() : 0))
                 .sum();
 
-        // Return the saved portfolio as a DTO
         return new PortfolioDTO(
                 savedPortfolio.getId(),
                 savedPortfolio.getName(),
                 savedPortfolio.getDescription(),
                 totalValue,
-                stocks.stream().map(Stock::getId).collect(Collectors.toList()) // Collect stock IDs
+                stocks.stream().map(Stock::getId).collect(Collectors.toList())
         );
     }
 
-
-
-    /**
-     * Retrieves all portfolios.
-     *
-     * @return A list of all portfolio DTOs.
-     */
     @Override
     public List<PortfolioDTO> getAllPortfolios() {
-        List<Portfolio> portfolios = portfolioRepository.findAll();
-        return portfolios.stream()
-                .map(portfolio -> {
-                    Double totalValue = portfolio.getStocks().stream()
-                            .mapToDouble(stock -> stock.getCurrentPrice() * stock.getQuantity()) // Calculate total value
-                            .sum();
-                    return new PortfolioDTO(
-                            portfolio.getId(),
-                            portfolio.getName(),
-                            portfolio.getDescription(),
-                            totalValue,
-                            portfolio.getStocks().stream().map(Stock::getId).collect(Collectors.toList())
-                    );
-                })
+        return portfolioRepository.findAll().stream()
+                .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Retrieves a portfolio by its ID.
-     *
-     * @param portfolioId The portfolio ID.
-     * @return The portfolio DTO, or throws an exception if not found.
-     */
     @Override
     public PortfolioDTO getPortfolioById(Long portfolioId) {
-        Optional<Portfolio> portfolioOpt = portfolioRepository.findById(portfolioId);
+        return portfolioRepository.findById(portfolioId)
+                .map(this::convertToDTO)
+                .orElseThrow(() -> new RuntimeException("Portfolio not found"));
+    }
 
-        if (portfolioOpt.isEmpty()) {
-            throw new RuntimeException("Portfolio not found");
-        }
-
-        Portfolio portfolio = portfolioOpt.get();
-
-        // Calculate the total value of the portfolio (sum of stock prices)
+    private PortfolioDTO convertToDTO(Portfolio portfolio) {
         Double totalValue = portfolio.getStocks().stream()
-                .mapToDouble(stock -> stock.getCurrentPrice() * stock.getQuantity()) // Assuming Stock has price and quantity
+                .mapToDouble(s -> s.getCurrentPrice() * (s.getQuantity() != null ? s.getQuantity() : 0))
                 .sum();
-
-        // Convert the entity to DTO
         return new PortfolioDTO(
                 portfolio.getId(),
                 portfolio.getName(),
@@ -122,17 +79,9 @@ public class PortfolioServiceImpl implements PortfolioService {
         );
     }
 
-    /**
-     * Deletes a portfolio by its ID.
-     *
-     * @param portfolioId The portfolio ID.
-     */
     @Override
     @Transactional
     public void deletePortfolio(Long portfolioId) {
-        if (!portfolioRepository.existsById(portfolioId)) {
-            throw new RuntimeException("Portfolio not found");
-        }
         portfolioRepository.deleteById(portfolioId);
     }
 }

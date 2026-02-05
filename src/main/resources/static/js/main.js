@@ -1,7 +1,68 @@
 // API Base URLs
 const API_BASE = 'http://localhost:8080';
 const OPENAI_API_KEY = 'Sid_123'; // Placeholder Key
+// API Base URL
 
+// ... (previous state variables stay the same)
+
+async function loadMarketStocks(render = true) {
+    try {
+        if (render) {
+            const tbody = document.getElementById('stock-table-body');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Loading...</td></tr>';
+        }
+        
+        // Pass API key if available in state
+        const url = stockApiKey ? `${API_BASE}/stocks?apiKey=${stockApiKey}` : `${API_BASE}/stocks`;
+        const res = await fetch(url);
+        marketStocks = await res.json();
+
+        if (render) {
+            renderStockTable();
+        }
+    } catch (e) {
+        console.error("Failed to load stocks:", e);
+        const tbody = document.getElementById('stock-table-body');
+        if(tbody) tbody.innerHTML = '<tr><td colspan="6">Error connecting to server.</td></tr>';
+    }
+}
+
+// Fixed History Chart Call
+async function updateChartRange(range) {
+    if (!currentDetailSymbol) return;
+    const canvas = document.getElementById('historyChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    if (historyChartInstance) historyChartInstance.destroy();
+
+    try {
+        // Calls the new endpoint added in StockController.java
+        const res = await fetch(`${API_BASE}/stocks/history/${currentDetailSymbol}/${range}`);
+        const historyMap = await res.json();
+
+        const labels = Object.keys(historyMap);
+        const prices = Object.values(historyMap);
+
+        historyChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Price (INR)',
+                    data: prices,
+                    borderColor: '#2ecc71',
+                    fill: false
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    } catch (e) {
+        console.error("History fetch error:", e);
+    }
+}
+
+// ... (rest of the file remains as provided in your original main.js)
 // State
 let portfolios = [];
 let marketStocks = [];
