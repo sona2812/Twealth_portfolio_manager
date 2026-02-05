@@ -6,7 +6,8 @@ public class TransactionDTO {
 
     private Long id;
     private Long portfolioId;  // Portfolio ID
-    private Long stockId;      // Stock ID
+    private Long stockId;      // Stock ID (can be temporary for API stocks)
+    private String stockSymbol; // Stock symbol (for finding/creating API stocks)
     private String transactionType;  // BUY or SELL
     private Double amount;      // Amount of stock
     private Double pricePerUnit;  // Price per unit of the stock
@@ -17,10 +18,11 @@ public class TransactionDTO {
     }
 
     // Constructor with all fields
-    public TransactionDTO(Long id, Long portfolioId, Long stockId, String transactionType, Double amount, Double pricePerUnit, Date transactionDate) {
+    public TransactionDTO(Long id, Long portfolioId, Long stockId, String stockSymbol, String transactionType, Double amount, Double pricePerUnit, Date transactionDate) {
         this.id = id;
         this.portfolioId = portfolioId;
         this.stockId = stockId;
+        this.stockSymbol = stockSymbol;
         this.transactionType = transactionType;
         this.amount = amount;
         this.pricePerUnit = pricePerUnit;
@@ -50,6 +52,14 @@ public class TransactionDTO {
 
     public void setStockId(Long stockId) {
         this.stockId = stockId;
+    }
+
+    public String getStockSymbol() {
+        return stockSymbol;
+    }
+
+    public void setStockSymbol(String stockSymbol) {
+        this.stockSymbol = stockSymbol;
     }
 
     public String getTransactionType() {
@@ -90,6 +100,7 @@ public class TransactionDTO {
                 "id=" + id +
                 ", portfolioId=" + portfolioId +
                 ", stockId=" + stockId +
+                ", stockSymbol='" + stockSymbol + '\'' +
                 ", transactionType='" + transactionType + '\'' +
                 ", amount=" + amount +
                 ", pricePerUnit=" + pricePerUnit +

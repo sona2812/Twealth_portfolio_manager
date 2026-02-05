@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,59 +35,75 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public List<StockDTO> getAllStocksWithLivePrices(String apiKey) {
-        // Use provided API key or let StockApiService use default from properties
-        // Pass null if empty string to allow fallback to properties
-        String keyToUse = (apiKey != null && !apiKey.isEmpty()) ? apiKey : null;
-        
-        // Fetch live prices for all popular stocks (will use properties API key if keyToUse is null)
-        List<StockDTO> liveStocks = stockApiService.fetchAllPopularStocks(keyToUse);
-        
-        // If no live stocks were fetched (no API key available), return database stocks
-        if (liveStocks.isEmpty()) {
-            return stockRepository.findAll().stream()
-                    .map(stock -> {
-                        StockDTO dto = StockDTO.fromEntity(stock);
-                        dto.setChangePercent(0.0);
-                        return dto;
-                    })
-                    .collect(Collectors.toList());
-        }
-        
-        // Also get any stocks from database and update their prices
-        List<Stock> dbStocks = stockRepository.findAll();
-        for (Stock dbStock : dbStocks) {
-            // Check if we already have this stock in live stocks
-            boolean exists = liveStocks.stream()
-                    .anyMatch(s -> s.getSymbol().equalsIgnoreCase(dbStock.getSymbol()));
+        try {
+            // Use provided API key or let StockApiService use default from properties
+            // Pass null if empty string to allow fallback to properties
+            String keyToUse = (apiKey != null && !apiKey.isEmpty()) ? apiKey : null;
             
-            if (!exists) {
-                // Fetch live price for this stock (will use properties API key if keyToUse is null)
-                StockDTO liveStock = stockApiService.fetchStockQuote(dbStock.getSymbol(), keyToUse);
-                if (liveStock != null) {
-                    liveStock.setId(dbStock.getId());
-                    liveStock.setQuantity(dbStock.getQuantity());
-                    liveStock.setTotalValue(liveStock.getCurrentPrice() * liveStock.getQuantity());
-                    liveStocks.add(liveStock);
-                } else {
-                    // If API call fails, use database value with 0 change
-                    StockDTO dto = StockDTO.fromEntity(dbStock);
-                    dto.setChangePercent(0.0);
-                    liveStocks.add(dto);
+            // Fetch live prices for all popular stocks (will use properties API key if keyToUse is null)
+            List<StockDTO> liveStocks = stockApiService.fetchAllPopularStocks(keyToUse);
+            
+            // If no live stocks were fetched (no API key available), return database stocks
+            if (liveStocks.isEmpty()) {
+                try {
+                    return stockRepository.findAll().stream()
+                            .map(stock -> {
+                                StockDTO dto = StockDTO.fromEntity(stock);
+                                dto.setChangePercent(0.0);
+                                return dto;
+                            })
+                            .collect(Collectors.toList());
+                } catch (Exception dbEx) {
+                    System.err.println("Error fetching from database: " + dbEx.getMessage());
+                    return new ArrayList<>();
                 }
-            } else {
-                // Update existing live stock with database quantity
-                liveStocks.stream()
-                        .filter(s -> s.getSymbol().equalsIgnoreCase(dbStock.getSymbol()))
-                        .findFirst()
-                        .ifPresent(s -> {
-                            s.setId(dbStock.getId());
-                            s.setQuantity(dbStock.getQuantity());
-                            s.setTotalValue(s.getCurrentPrice() * s.getQuantity());
-                        });
             }
+            
+            // Also get any stocks from database and update their prices
+            try {
+                List<Stock> dbStocks = stockRepository.findAll();
+                for (Stock dbStock : dbStocks) {
+                    // Check if we already have this stock in live stocks
+                    boolean exists = liveStocks.stream()
+                            .anyMatch(s -> s.getSymbol().equalsIgnoreCase(dbStock.getSymbol()));
+                    
+                    if (!exists) {
+                        // Fetch live price for this stock (will use properties API key if keyToUse is null)
+                        StockDTO liveStock = stockApiService.fetchStockQuote(dbStock.getSymbol(), keyToUse);
+                        if (liveStock != null) {
+                            liveStock.setId(dbStock.getId());
+                            liveStock.setQuantity(dbStock.getQuantity());
+                            liveStock.setTotalValue(liveStock.getCurrentPrice() * liveStock.getQuantity());
+                            liveStocks.add(liveStock);
+                        } else {
+                            // If API call fails, use database value with 0 change
+                            StockDTO dto = StockDTO.fromEntity(dbStock);
+                            dto.setChangePercent(0.0);
+                            liveStocks.add(dto);
+                        }
+                    } else {
+                        // Update existing live stock with database quantity
+                        liveStocks.stream()
+                                .filter(s -> s.getSymbol().equalsIgnoreCase(dbStock.getSymbol()))
+                                .findFirst()
+                                .ifPresent(s -> {
+                                    s.setId(dbStock.getId());
+                                    s.setQuantity(dbStock.getQuantity());
+                                    s.setTotalValue(s.getCurrentPrice() * s.getQuantity());
+                                });
+                    }
+                }
+            } catch (Exception dbEx) {
+                System.err.println("Error processing database stocks: " + dbEx.getMessage());
+                // Continue with live stocks only
+            }
+            
+            return liveStocks;
+        } catch (Exception e) {
+            System.err.println("Error in getAllStocksWithLivePrices: " + e.getMessage());
+            // Return empty list to prevent 500 error
+            return new ArrayList<>();
         }
-        
-        return liveStocks;
     }
 
     @Override

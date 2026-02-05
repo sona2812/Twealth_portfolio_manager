@@ -472,20 +472,10 @@ async function loadMarketStocks(render = true) {
                         ${icon} ${change.toFixed(2)}%
                     </td>
                     <td>
-                        <div style="width: 100px; height: 40px;">
-                            <canvas id="chart-${s.id}"></canvas>
-                        </div>
-                    </td>
-                    <td>
                         <button class="btn btn-primary" style="padding: 0.4rem 0.8rem;" onclick="openBuyModal(${s.id}, '${s.symbol}', ${s.currentPrice})">Buy</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
-
-                // Render Sparkline
-                // Since we don't have historical data, we simulate a line that ends at the current price
-                // with the appropriate slope based on the change.
-                renderSparkline(s.id, s.currentPrice, change);
             }
         }
     } catch (e) {
@@ -493,7 +483,7 @@ async function loadMarketStocks(render = true) {
         if (render) {
             const tbody = document.getElementById('stock-table-body');
             if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--danger-color);">
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--danger-color);">
                     Error loading stocks: ${e.message}<br>
                     ${stockApiKey ? 'Please wait for a few minutes and try again.' : 'please wait'}
                 </td></tr>`;
@@ -501,62 +491,6 @@ async function loadMarketStocks(render = true) {
         }
     }
 }
-
-function renderSparkline(stockId, currentPrice, changePercent) {
-    // Simulate past data points to create a "trend" line
-    // If change is positive, ensure the graph ends higher than it starts.
-    const ctx = document.getElementById(`chart-${stockId}`).getContext('2d');
-
-    // Generate 10 fake points
-    const points = [];
-    const volatility = currentPrice * 0.02; // 2% volatility simulation
-
-    // Starting point roughly based on change
-    // If change is +10%, start roughly 10% lower.
-    let startPrice = currentPrice / (1 + (changePercent / 100));
-
-    if (changePercent === 0) startPrice = currentPrice;
-
-    // Generate points between start and current
-    for (let i = 0; i < 9; i++) {
-        // Linear interpolation + noise
-        const progress = i / 9;
-        const trend = startPrice + (currentPrice - startPrice) * progress;
-        const noise = (Math.random() - 0.5) * volatility;
-        points.push(trend + noise);
-    }
-    points.push(currentPrice); // Ensure last point is real
-
-    const color = changePercent >= 0 ? '#4cc9f0' : '#f72585'; // Blue/Cyan for profit, Pink/Red for loss (Using theme colors if possible, else green/red)
-    // Actually user asked for Green/Red.
-    const realColor = changePercent >= 0 ? '#2ecc71' : '#e74c3c';
-
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            datasets: [{
-                data: points,
-                borderColor: realColor,
-                borderWidth: 2,
-                pointRadius: 0,
-                fill: false,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { enabled: false } },
-            scales: {
-                x: { display: false },
-                y: { display: false }
-            },
-            layout: { padding: 0 }
-        }
-    });
-}
-
 
 async function handleCreateMarketStock(e) {
     e.preventDefault();
@@ -604,6 +538,7 @@ function updateBuyTotal() {
 async function handleBuyStock(e) {
     e.preventDefault();
     const stockId = document.getElementById('buy-stock-id').value;
+    const stockSymbol = document.getElementById('buy-stock-symbol').textContent;
     const portfolioId = document.getElementById('buy-portfolio-select').value;
     const qty = parseFloat(document.getElementById('buy-quantity').value);
     const price = parseFloat(document.getElementById('buy-stock-price').value);
@@ -611,6 +546,7 @@ async function handleBuyStock(e) {
     const transaction = {
         portfolioId: parseInt(portfolioId),
         stockId: parseInt(stockId),
+        stockSymbol: stockSymbol,
         transactionType: 'BUY',
         amount: qty,
         pricePerUnit: price,
@@ -643,6 +579,7 @@ async function handleSellStock(e) {
     e.preventDefault();
     const portfolioId = document.getElementById('sell-portfolio-id').value;
     const stockId = document.getElementById('sell-stock-id').value;
+    const stockSymbol = document.getElementById('sell-stock-symbol').textContent;
     const qty = parseFloat(document.getElementById('sell-quantity').value);
     const price = parseFloat(document.getElementById('sell-current-price').value);
     const max = parseFloat(document.getElementById('sell-quantity').max);
@@ -655,6 +592,7 @@ async function handleSellStock(e) {
     const transaction = {
         portfolioId: parseInt(portfolioId),
         stockId: parseInt(stockId),
+        stockSymbol: stockSymbol,
         transactionType: 'SELL',
         amount: qty,
         pricePerUnit: price,
@@ -683,10 +621,17 @@ async function postTransaction(transaction, modalId) {
             } else {
                 alert("Sale Successful!");
             }
+        } else if (res.status === 400) {
+            alert("Invalid transaction data. Please check all fields.");
+        } else if (res.status === 404) {
+            alert("Portfolio or stock not found. Please refresh and try again.");
         } else {
-            alert("Transaction failed.");
+            alert("Transaction failed. Please try again.");
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error(e);
+        alert("Network error. Please check your connection and try again.");
+    }
 }
 
 // --- Demo Data ---

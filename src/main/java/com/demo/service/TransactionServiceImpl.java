@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Date;
 
 @Service
 public class TransactionServiceImpl implements TransactionService {
@@ -42,27 +43,49 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     @Transactional
     public TransactionDTO saveTransaction(TransactionDTO transactionDTO) {
-        // Fetch portfolio and stock using the provided IDs
+        // Fetch portfolio using the provided ID
         Optional<Portfolio> portfolioOpt = portfolioRepository.findById(transactionDTO.getPortfolioId());
-        Optional<Stock> stockOpt = stockRepository.findById(transactionDTO.getStockId());
 
         if (portfolioOpt.isEmpty()) {
             throw new RuntimeException("Portfolio not found");
         }
 
+        // Handle stock - try by ID first, then by symbol (for API stocks with temporary IDs)
+        Stock stock;
+        Optional<Stock> stockOpt = stockRepository.findById(transactionDTO.getStockId());
+        
         if (stockOpt.isEmpty()) {
-            throw new RuntimeException("Stock not found");
+            // If not found by ID, try to find by symbol (for API stocks)
+            if (transactionDTO.getStockSymbol() != null && !transactionDTO.getStockSymbol().isEmpty()) {
+                Optional<Stock> stockBySymbol = stockRepository.findBySymbol(transactionDTO.getStockSymbol());
+                if (stockBySymbol.isPresent()) {
+                    stock = stockBySymbol.get();
+                } else {
+                    // Create new stock if it doesn't exist
+                    stock = createNewStock(transactionDTO);
+                }
+            } else {
+                throw new RuntimeException("Stock not found and no symbol provided");
+            }
+        } else {
+            stock = stockOpt.get();
         }
 
         // Convert DTO to entity
         Transaction transaction = new Transaction();
         transaction.setId(transactionDTO.getId());
         transaction.setPortfolio(portfolioOpt.get());
-        transaction.setStock(stockOpt.get());
+        transaction.setStock(stock);
         transaction.setType(TransactionType.valueOf(transactionDTO.getTransactionType()));  // Convert string to enum
         transaction.setAmount(transactionDTO.getAmount());
         transaction.setPricePerUnit(transactionDTO.getPricePerUnit());
-        transaction.setTransactionDate(transactionDTO.getTransactionDate());
+        
+        // Set transaction date - use current date if null is provided
+        if (transactionDTO.getTransactionDate() == null) {
+            transaction.setTransactionDate(new Date());
+        } else {
+            transaction.setTransactionDate(transactionDTO.getTransactionDate());
+        }
 
         // Save the transaction in the repository
         Transaction savedTransaction = transactionRepository.save(transaction);
@@ -72,11 +95,30 @@ public class TransactionServiceImpl implements TransactionService {
                 savedTransaction.getId(),
                 savedTransaction.getPortfolio().getId(),
                 savedTransaction.getStock().getId(),
+                savedTransaction.getStock().getSymbol(),
                 savedTransaction.getType().name(),
                 savedTransaction.getAmount(),
                 savedTransaction.getPricePerUnit(),
                 savedTransaction.getTransactionDate()
         );
+    }
+    
+    /**
+     * Helper method to create a new stock from transaction data
+     */
+    private Stock createNewStock(TransactionDTO transactionDTO) {
+        Stock stock = new Stock();
+        stock.setSymbol(transactionDTO.getStockSymbol());
+        stock.setCompanyName(transactionDTO.getStockSymbol() + " Company"); // Default name
+        stock.setCurrentPrice(transactionDTO.getPricePerUnit());
+        stock.setQuantity(0); // Use Integer instead of double
+        
+        try {
+            return stockRepository.save(stock);
+        } catch (Exception e) {
+            System.err.println("Error creating new stock: " + e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -92,6 +134,7 @@ public class TransactionServiceImpl implements TransactionService {
                         transaction.getId(),
                         transaction.getPortfolio().getId(),
                         transaction.getStock().getId(),
+                        transaction.getStock().getSymbol(),
                         transaction.getType().name(),
                         transaction.getAmount(),
                         transaction.getPricePerUnit(),
@@ -114,6 +157,7 @@ public class TransactionServiceImpl implements TransactionService {
                         transaction.getId(),
                         transaction.getPortfolio().getId(),
                         transaction.getStock().getId(),
+                        transaction.getStock().getSymbol(),
                         transaction.getType().name(),
                         transaction.getAmount(),
                         transaction.getPricePerUnit(),
@@ -141,6 +185,7 @@ public class TransactionServiceImpl implements TransactionService {
                 transaction.getId(),
                 transaction.getPortfolio().getId(),
                 transaction.getStock().getId(),
+                transaction.getStock().getSymbol(),
                 transaction.getType().name(),
                 transaction.getAmount(),
                 transaction.getPricePerUnit(),

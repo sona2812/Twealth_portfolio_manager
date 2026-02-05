@@ -14,10 +14,9 @@ public class StockApiService {
     private final String defaultApiKey;
     private final double usdInrRate;
     
-    // Popular stock symbols to fetch (limited to avoid rate limiting)
+    // Top 10 popular stock symbols to fetch (major US companies)
     private static final List<String> POPULAR_STOCKS = Arrays.asList(
-        "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "JPM", "V", "JNJ",
-        "WMT", "PG", "MA", "UNH", "HD"
+        "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "JPM", "V", "WMT"
     );
 
     public StockApiService(
@@ -161,17 +160,21 @@ public class StockApiService {
         
         List<StockDTO> stocks = new ArrayList<>();
         
+        // Fetch all 10 top stocks
         for (String symbol : POPULAR_STOCKS) {
-            StockDTO stock = fetchStockQuote(symbol, keyToUse);
-            if (stock != null) {
-                stocks.add(stock);
-            }
-            // Add small delay to avoid rate limiting (Finnhub free tier: 60 calls/min)
             try {
-                Thread.sleep(1100); // 1.1 seconds between calls to stay under 60/min limit
+                StockDTO stock = fetchStockQuote(symbol, keyToUse);
+                if (stock != null) {
+                    stocks.add(stock);
+                }
+                // Reduced delay to stay within rate limits
+                Thread.sleep(600); // 600ms between calls
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
+            } catch (Exception e) {
+                System.err.println("Error fetching " + symbol + ": " + e.getMessage());
+                // Continue with next stock instead of breaking
             }
         }
         
