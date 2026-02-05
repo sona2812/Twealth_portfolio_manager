@@ -40,13 +40,10 @@ public class StockController {
         return new ResponseEntity<>(StockDTO.fromEntity(savedStock), HttpStatus.CREATED);
     }
 
-    // Get all stocks
+    // Get all stocks with live prices
     @GetMapping
-    public ResponseEntity<List<StockDTO>> getAllStocks() {
-        List<Stock> stocks = stockService.getAllStocks();
-        List<StockDTO> stockDTOs = stocks.stream()
-                .map(StockDTO::fromEntity)
-                .collect(Collectors.toList());
+    public ResponseEntity<List<StockDTO>> getAllStocks(@RequestParam(required = false) String apiKey) {
+        List<StockDTO> stockDTOs = stockService.getAllStocksWithLivePrices(apiKey);
         return new ResponseEntity<>(stockDTOs, HttpStatus.OK);
     }
 

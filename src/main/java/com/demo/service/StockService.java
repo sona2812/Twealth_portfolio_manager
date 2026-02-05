@@ -1,5 +1,6 @@
 package com.demo.service;
 
+import com.demo.dto.StockDTO;
 import com.demo.model.Stock;
 
 import java.util.List;
@@ -12,6 +13,9 @@ public interface StockService {
 
     // Get all stocks
     List<Stock> getAllStocks();
+
+    // Get all stocks with live prices from API
+    List<StockDTO> getAllStocksWithLivePrices(String apiKey);
 
     // Get a stock by its ID
     Optional<Stock> getStockById(Long id);

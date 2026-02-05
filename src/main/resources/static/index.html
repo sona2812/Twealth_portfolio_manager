@@ -134,9 +134,14 @@
             <section id="stocks" class="animate-fade-in" style="display: none;">
                 <header>
                     <h1>Stocks Market</h1>
-                    <button class="btn btn-primary" onclick="openModal('create-stock-modal')">
-                        <i class="fas fa-plus"></i> List New Stock
-                    </button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="loadMarketStocks()" title="Refresh stock prices">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button class="btn btn-primary" onclick="openModal('create-stock-modal')">
+                            <i class="fas fa-plus"></i> List New Stock
+                        </button>
+                    </div>
                 </header>
 
                 <div class="table-container">
@@ -158,13 +163,27 @@
                 </div>
             </section>
 
-            <!-- Settings Section (Placeholder) -->
+            <!-- Settings Section -->
             <section id="settings" class="animate-fade-in" style="display: none;">
                 <header>
                     <h1>Settings</h1>
                 </header>
                 <div class="card">
-                    <p>Settings configuration would go here.</p>
+                    <h3>Stock API Configuration</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 1rem;">
+                        API key is configured in <code>application.properties</code>. You can optionally override it here. 
+                        Get a free API key at <a href="https://finnhub.io/register" target="_blank" style="color: var(--highlight-color);">finnhub.io</a>
+                    </p>
+                    <form id="api-key-form">
+                        <div class="form-group">
+                            <label>Finnhub API Key (Optional Override)</label>
+                            <input type="text" id="api-key-input" placeholder="Leave empty to use application.properties" 
+                                   value="" style="width: 100%; padding: 0.8rem; background: var(--primary-color); color: var(--text-color); border: 1px solid var(--glass-border); border-radius: 6px;">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save API Key</button>
+                        <button type="button" class="btn btn-delete" onclick="clearApiKey()">Clear</button>
+                    </form>
+                    <div id="api-key-status" style="margin-top: 1rem; padding: 0.8rem; border-radius: 6px; display: none;"></div>
                 </div>
             </section>
         </main>

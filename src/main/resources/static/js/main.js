@@ -6,6 +6,7 @@ const OPENAI_API_KEY = 'Sid_123'; // Placeholder Key
 let portfolios = [];
 let marketStocks = [];
 let transactions = [];
+let stockApiKey = localStorage.getItem('stockApiKey') || ''; // Stock API key from localStorage
 
 // DOM Elements
 document.addEventListener('DOMContentLoaded', () => {
@@ -26,6 +27,7 @@ function setupEventListeners() {
     document.getElementById('create-stock-form').addEventListener('submit', handleCreateMarketStock);
     document.getElementById('buy-stock-form').addEventListener('submit', handleBuyStock);
     document.getElementById('sell-stock-form').addEventListener('submit', handleSellStock);
+    document.getElementById('api-key-form').addEventListener('submit', handleApiKeySubmit);
 
     // Buy/Sell Calculators
     document.getElementById('buy-quantity').addEventListener('input', updateBuyTotal);
@@ -59,6 +61,7 @@ function showSection(sectionId) {
     if (sectionId === 'dashboard') initDashboard();
     if (sectionId === 'portfolios') loadPortfolios();
     if (sectionId === 'stocks') loadMarketStocks();
+    if (sectionId === 'settings') loadSettings();
 }
 
 // --- Dashboard ---
@@ -422,7 +425,25 @@ function renderHoldingsTable(holdings, portfolioId) {
 // --- Market Stocks (Global) ---
 async function loadMarketStocks(render = true) {
     try {
-        const res = await fetch(`${API_BASE}/stocks`);
+        // Show loading indicator
+        if (render) {
+            const tbody = document.getElementById('stock-table-body');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">Loading live stock prices...</td></tr>';
+            }
+        }
+        
+        // Build URL with API key if available
+        let url = `${API_BASE}/stocks`;
+        if (stockApiKey) {
+            url += `?apiKey=${encodeURIComponent(stockApiKey)}`;
+        }
+        
+        const res = await fetch(url);
+        if (!res.ok) {
+            throw new Error(`Failed to fetch stocks: ${res.statusText}`);
+        }
+        
         marketStocks = await res.json();
 
         if (render) {
@@ -469,6 +490,15 @@ async function loadMarketStocks(render = true) {
         }
     } catch (e) {
         console.error(e);
+        if (render) {
+            const tbody = document.getElementById('stock-table-body');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--danger-color);">
+                    Error loading stocks: ${e.message}<br>
+                    ${stockApiKey ? 'Please check your API key override in Settings.' : 'Please configure your API key in application.properties or Settings to fetch live prices.'}
+                </td></tr>`;
+            }
+        }
     }
 }
 
@@ -756,6 +786,69 @@ async function sendMessage() {
         const chatBody = document.getElementById('chat-body');
         chatBody.removeChild(chatBody.lastElementChild);
         addChatMessage('bot', "Sorry, I encountered an error connecting to the AI.");
+    }
+}
+
+// --- Settings ---
+function loadSettings() {
+    // Load saved API key into input field
+    const apiKeyInput = document.getElementById('api-key-input');
+    if (apiKeyInput) {
+        apiKeyInput.value = stockApiKey || '';
+    }
+}
+
+function handleApiKeySubmit(e) {
+    e.preventDefault();
+    const apiKeyInput = document.getElementById('api-key-input');
+    const apiKey = apiKeyInput.value.trim();
+    
+    // Allow empty to use application.properties API key
+    stockApiKey = apiKey; // Can be empty string
+    if (apiKey) {
+        localStorage.setItem('stockApiKey', apiKey);
+        showApiKeyStatus('API key override saved! Will use this instead of application.properties.', 'success');
+    } else {
+        localStorage.removeItem('stockApiKey');
+        showApiKeyStatus('API key override cleared. Will use API key from application.properties.', 'info');
+    }
+    
+    // Reload stocks with new API key (or use default from properties)
+    if (document.getElementById('stocks').style.display !== 'none') {
+        loadMarketStocks();
+    }
+}
+
+function clearApiKey() {
+    stockApiKey = '';
+    localStorage.removeItem('stockApiKey');
+    const apiKeyInput = document.getElementById('api-key-input');
+    if (apiKeyInput) {
+        apiKeyInput.value = '';
+    }
+    showApiKeyStatus('API key override cleared. Will use API key from application.properties.', 'info');
+    
+    // Reload stocks to use default from properties
+    if (document.getElementById('stocks').style.display !== 'none') {
+        loadMarketStocks();
+    }
+}
+
+function showApiKeyStatus(message, type) {
+    const statusDiv = document.getElementById('api-key-status');
+    if (statusDiv) {
+        statusDiv.style.display = 'block';
+        statusDiv.textContent = message;
+        statusDiv.style.backgroundColor = type === 'success' ? 'rgba(46, 204, 113, 0.2)' : 
+                                          type === 'error' ? 'rgba(231, 76, 60, 0.2)' : 
+                                          'rgba(52, 152, 219, 0.2)';
+        statusDiv.style.color = type === 'success' ? 'var(--success-color)' : 
+                               type === 'error' ? 'var(--danger-color)' : 
+                               'var(--highlight-color)';
+        
+        setTimeout(() => {
+            statusDiv.style.display = 'none';
+        }, 3000);
     }
 }
 
