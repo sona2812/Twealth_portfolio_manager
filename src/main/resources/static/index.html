@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Portfolio Manager</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-logo">
+                <i class="fas fa-chart-line"></i> TWEALTH
+            </div>
+            <a href="#" class="nav-link active" onclick="showSection('dashboard')">
+                <i class="fas fa-th-large"></i> Dashboard
+            </a>
+            <a href="#" class="nav-link" onclick="showSection('portfolios')">
+                <i class="fas fa-briefcase"></i> My Portfolios
+            </a>
+            <a href="#" class="nav-link" onclick="showSection('stocks')">
+                <i class="fas fa-chart-bar"></i> Stocks Market
+            </a>
+            <a href="#" class="nav-link" onclick="showSection('settings')">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="animate-fade-in">
+                <header>
+                    <h1>Dashboard</h1>
+                    <div class="user-profile">
+                        <button class="btn btn-primary" onclick="seedDemoData()"
+                            style="padding: 0.5rem 1rem; font-size: 0.8rem; margin-right: 15px; background-color: var(--secondary-color); border: 1px solid var(--highlight-color);">
+                            <i class="fas fa-database"></i> Seed Demo Data
+                        </button>
+                        <span>Welcome, User</span>
+                    </div>
+                </header>
+
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <h3>Total Current Value</h3>
+                        <div class="value" id="dashboard-total-value">Loading...</div>
+                    </div>
+                    <div class="card">
+                        <h3>Total Invested</h3>
+                        <div class="value" id="dashboard-total-invested">Loading...</div>
+                    </div>
+                    <div class="card">
+                        <h3>Total Profit</h3>
+                        <div class="value" id="dashboard-total-profit">Loading...</div>
+                        <div id="dashboard-profit-percent" style="font-size: 1rem; margin-top: 5px; font-weight: bold;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                    <div class="card">
+                        <h3>Stock Allocation</h3>
+                        <div class="chart-container">
+                            <canvas id="allocationChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Portfolio Value Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="portfolioChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Portfolio Performance (Simulated)</h3>
+                        <div class="chart-container">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Portfolios Section -->
+            <section id="portfolios" class="animate-fade-in" style="display: none;">
+                <header>
+                    <h1>My Portfolios</h1>
+                    <button class="btn btn-primary" onclick="openModal('create-portfolio-modal')">
+                        <i class="fas fa-plus"></i> New Portfolio
+                    </button>
+                </header>
+
+                <div id="portfolio-list" class="dashboard-grid">
+                    <!-- Portfolios will be injected here -->
+                </div>
+
+                <!-- Portfolio Details (Dynamically shown) -->
+                <div id="portfolio-details" style="display: none; margin-top: 2rem;">
+                    <header>
+                        <h2 id="pd-name">Portfolio Name</h2>
+                        <button class="btn btn-delete" onclick="closePortfolioDetails()">Back to List</button>
+                    </header>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Company</th>
+                                    <th>Qty Owned</th>
+                                    <th>Avg Price</th>
+                                    <th>Current Value</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pd-table-body">
+                                <!-- Holdings rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Stocks Market Section -->
+            <section id="stocks" class="animate-fade-in" style="display: none;">
+                <header>
+                    <h1>Stocks Market</h1>
+                    <button class="btn btn-primary" onclick="openModal('create-stock-modal')">
+                        <i class="fas fa-plus"></i> List New Stock
+                    </button>
+                </header>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Company</th>
+                                <th>Current Price</th>
+                                <th>Change</th>
+                                <th>Trend</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stock-table-body">
+                            <!-- Stocks rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Settings Section (Placeholder) -->
+            <section id="settings" class="animate-fade-in" style="display: none;">
+                <header>
+                    <h1>Settings</h1>
+                </header>
+                <div class="card">
+                    <p>Settings configuration would go here.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Chat Widget -->
+    <div class="chat-widget collapsed" id="chat-widget">
+        <div class="chat-header" onclick="toggleChat()">
+            <span><i class="fas fa-robot"></i> AI Assistant</span>
+            <i class="fas fa-chevron-up" id="chat-toggle-icon"></i>
+        </div>
+        <div class="chat-body" id="chat-body">
+            <div class="chat-message bot">
+                Hello! I'm your portfolio assistant. Ask me anything about your stocks or finances.
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" class="chat-input" id="chat-input" placeholder="Type a message...">
+            <button class="btn btn-primary" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- Create Portfolio Modal -->
+    <div class="modal" id="create-portfolio-modal">
+        <div class="modal-content">
+            <h2>Create Portfolio</h2>
+            <form id="create-portfolio-form">
+                <div class="form-group">
+                    <label>Portfolio Name</label>
+                    <input type="text" id="p-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="p-desc"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Create</button>
+                <button type="button" class="btn btn-delete"
+                    onclick="closeModal('create-portfolio-modal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Market Stock Modal -->
+    <div class="modal" id="create-stock-modal">
+        <div class="modal-content">
+            <h2>List New Stock to Market</h2>
+            <form id="create-stock-form">
+                <div class="form-group">
+                    <label>Symbol</label>
+                    <input type="text" id="s-symbol" required placeholder="e.g. AAPL">
+                </div>
+                <div class="form-group">
+                    <label>Company Name</label>
+                    <input type="text" id="s-company" required>
+                </div>
+                <div class="form-group">
+                    <label>Current Price</label>
+                    <input type="number" id="s-price" required step="0.01">
+                </div>
+                <button type="submit" class="btn btn-primary">List Stock</button>
+                <button type="button" class="btn btn-delete" onclick="closeModal('create-stock-modal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Buy Stock Modal -->
+    <div class="modal" id="buy-stock-modal">
+        <div class="modal-content">
+            <h2>Buy Stock: <span id="buy-stock-symbol"></span></h2>
+            <form id="buy-stock-form">
+                <input type="hidden" id="buy-stock-id">
+                <input type="hidden" id="buy-stock-price">
+                <div class="form-group">
+                    <label>Select Portfolio</label>
+                    <select id="buy-portfolio-select" required
+                        style="width: 100%; padding: 0.8rem; background: var(--primary-color); color: var(--text-color); border: 1px solid var(--glass-border); border-radius: 6px;">
+                        <!-- Options injected -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Quantity to Buy</label>
+                    <input type="number" id="buy-quantity" required min="1">
+                </div>
+                <div class="form-group">
+                    <label>Total Cost</label>
+                    <div id="buy-total-cost"
+                        style="font-size: 1.2rem; font-weight: bold; color: var(--highlight-color);">₹0.00</div>
+                </div>
+                <button type="submit" class="btn btn-primary">Confirm Buy</button>
+                <button type="button" class="btn btn-delete" onclick="closeModal('buy-stock-modal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sell Stock Modal -->
+    <div class="modal" id="sell-stock-modal">
+        <div class="modal-content">
+            <h2>Sell Stock: <span id="sell-stock-symbol"></span></h2>
+            <form id="sell-stock-form">
+                <input type="hidden" id="sell-stock-id">
+                <input type="hidden" id="sell-portfolio-id">
+                <input type="hidden" id="sell-current-price">
+                <div class="form-group">
+                    <label>Quantity to Sell (Owned: <span id="sell-max-qty"></span>)</label>
+                    <input type="number" id="sell-quantity" required min="1">
+                </div>
+                <div class="form-group">
+                    <label>Estimated Value</label>
+                    <div id="sell-total-value"
+                        style="font-size: 1.2rem; font-weight: bold; color: var(--success-color);">₹0.00</div>
+                </div>
+                <button type="submit" class="btn btn-primary">Confirm Sell</button>
+                <button type="button" class="btn btn-delete" onclick="closeModal('sell-stock-modal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stock Details Modal -->
+    <div class="modal" id="stock-details-modal">
+        <div class="modal-content" style="max-width: 800px; width: 90%;">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <h2 id="sd-symbol" style="margin: 0; font-size: 2rem;">AAPL</h2>
+                    <p id="sd-company" style="color: var(--text-muted); margin: 0;">Apple Inc.</p>
+                </div>
+                <div style="text-align: right;">
+                    <div id="sd-price" style="font-size: 2rem; font-weight: bold;">$150.00</div>
+                    <div id="sd-change" style="color: var(--success-color); font-weight: bold;">+1.2%</div>
+                </div>
+            </header>
+
+            <div class="chart-controls"
+                style="display: flex; gap: 10px; margin-bottom: 1rem; justify-content: flex-end;">
+                <button class="btn btn-primary" onclick="updateChartRange('1D')">1D</button>
+                <button class="btn btn-primary" onclick="updateChartRange('1W')">1W</button>
+                <button class="btn btn-primary" onclick="updateChartRange('1M')">1M</button>
+                <button class="btn btn-primary" onclick="updateChartRange('1Y')">1Y</button>
+            </div>
+
+            <div class="chart-container" style="height: 400px; position: relative;">
+                <canvas id="historyChart"></canvas>
+            </div>
+
+            <div style="margin-top: 1rem; text-align: right;">
+                <button type="button" class="btn btn-delete" onclick="closeModal('stock-details-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+
+</html>
